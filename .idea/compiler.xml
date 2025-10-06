@@ -13,11 +13,11 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.40/lombok-1.18.40.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.40/lombok-1.18.40.jar" />
         </processorPath>
+        <module name="Gestion_des_comptes_et_authentification" />
+        <module name="Soutenance" />
         <module name="inscription_et_reinscription" />
         <module name="Notification_communication" />
-        <module name="Gestion_des_comptes_et_authentification" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -29,6 +29,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="Gestion_des_comptes_et_authentification" options="-parameters" />
       <module name="Notification_communication" options="-parameters" />
+      <module name="Soutenance" options="-parameters" />
       <module name="demo" options="-parameters" />
       <module name="inscription_et_reinscription" options="-parameters" />
       <module name="soutenance" options="-parameters" />
