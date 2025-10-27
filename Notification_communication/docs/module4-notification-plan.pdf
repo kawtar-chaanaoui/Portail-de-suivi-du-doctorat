@@ -1,0 +1,57 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 902 >>
+stream
+BT
+/F1 12 Tf
+72 760 Td
+14 TL
+(Module 4 - Notification & Communication) Tj
+T*
+(Scope: Spring Boot microservice delivering notifications with Angular admin UI.) Tj
+T*
+(Core Services: Template CRUD, merge variables, orchestration, PDF endpoint.) Tj
+T*
+(Spring Tasks: secure controllers, mail setup, logging, Resilience4j.) Tj
+T*
+(Angular Tasks: admin routes, template editor, notification history, API services.) Tj
+T*
+(Data Rules: unique codes, immutable once used, nightly digest placeholder.) Tj
+T*
+(Integrations: Gateway routing, Eureka registration, future Kafka topics.) Tj
+T*
+(API Hooks: REST endpoint POST /api/notifications/send for other services.) Tj
+T*
+(Project Steps: migrations, DTO validation, tests, Angular build, gateway tests.) Tj
+T*
+(Containerization: Dockerfiles and compose, document usage.) Tj
+T*
+(Next Focus: decide rich text editor, define payload contract, finalize schema.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001193 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1263
+%%EOF
