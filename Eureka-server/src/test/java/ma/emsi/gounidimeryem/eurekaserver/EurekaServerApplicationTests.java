@@ -1,9 +1,9 @@
-package ma.emsi.gounidimeryem.eurekaserver;
+package ma.emsi.eurekaserver;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(classes = EurekaServerApplication.class)
 class EurekaServerApplicationTests {
 
     @Test
