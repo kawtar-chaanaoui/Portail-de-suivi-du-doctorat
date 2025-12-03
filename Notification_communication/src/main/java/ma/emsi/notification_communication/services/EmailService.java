@@ -36,6 +36,12 @@ public class EmailService {
         }
     }
 
+    public void sendTestEmail(String to) {
+        String subject = "Test Email Spring Boot";
+        String content = "<html><body><h2>Ceci est un test d'envoi d'email depuis Spring Boot !</h2></body></html>";
+        sendSimpleEmail(to, subject, content);
+    }
+
     public void sendDossierSoumis(String studentEmail, String studentName) {
         String subject = "Dossier de thèse soumis - EMSI";
         String content = String.format("""
