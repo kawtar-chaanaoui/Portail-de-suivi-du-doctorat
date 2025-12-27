@@ -1,0 +1,17 @@
+package ma.emsi.notification_communication.entite;
+
+public enum NotificationType {
+    EMAIL,
+    SMS,
+    PUSH_NOTIFICATION,
+    DOCUMENT_READY,
+    PROCESS_COMPLETE,
+    THESIS_SUBMISSION,
+    DEFENSE_SCHEDULED,
+    SUPERVISOR_ASSIGNMENT,
+    COMMITTEE_FORMATION,
+    PROGRESS_REPORT_DUE,
+    EVALUATION_COMPLETED,
+    ENROLLMENT_CONFIRMED,
+    DEADLINE_REMINDER
+}

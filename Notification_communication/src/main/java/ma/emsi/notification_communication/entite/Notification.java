@@ -55,7 +55,7 @@ public class Notification {
     }
 
     public enum NotificationStatus {
-        PENDING, SENT, FAILED, DELIVERED
+        PENDING, PROCESSING, SENT, FAILED, DELIVERED
     }
 
     public enum NotificationEvent {
@@ -66,6 +66,8 @@ public class Notification {
         SOUTENANCE_DEMANDEE,
         JURY_PROPOSE,
         AUTORISATION_SOUTENANCE,
-        SOUTENANCE_PLANIFIEE
+        SOUTENANCE_PLANIFIEE,
+        PROCESS_COMPLETE,
+        PROGRESS_REPORT_DUE
     }
 }
