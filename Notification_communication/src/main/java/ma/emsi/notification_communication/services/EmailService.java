@@ -2,6 +2,8 @@ package ma.emsi.notification_communication.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import ma.emsi.notification_communication.dto.EmailPayload;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -9,6 +11,8 @@ import org.springframework.stereotype.Service;
 // CORRECTION : Utiliser jakarta.mail au lieu de javax.mail
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -18,22 +22,52 @@ public class EmailService {
     private final JavaMailSender mailSender;
 
     public void sendSimpleEmail(String to, String subject, String content) {
+        sendEmail(EmailPayload.builder()
+            .to(to)
+            .subject(subject)
+            .htmlBody(content)
+            .build());
+    }
+
+    public void sendEmail(EmailPayload payload) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            boolean hasAttachments = payload.getAttachments() != null && !payload.getAttachments().isEmpty();
+            MimeMessageHelper helper = new MimeMessageHelper(message, hasAttachments, "UTF-8");
 
-            helper.setTo(to);
-            helper.setSubject(subject);
-            helper.setText(content, true);
+            helper.setTo(payload.getTo());
+            if (payload.getCc() != null && !payload.getCc().isEmpty()) {
+                helper.setCc(payload.getCc().toArray(new String[0]));
+            }
+            if (payload.getBcc() != null && !payload.getBcc().isEmpty()) {
+                helper.setBcc(payload.getBcc().toArray(new String[0]));
+            }
+
+            helper.setSubject(payload.getSubject());
+            helper.setText(payload.getHtmlBody(), true);
             helper.setFrom("noreply@doctorat.emsi.ma");
 
+            if (hasAttachments) {
+                for (Map.Entry<String, byte[]> entry : payload.getAttachments().entrySet()) {
+                    if (entry.getValue() != null) {
+                        helper.addAttachment(entry.getKey(), new ByteArrayResource(entry.getValue()));
+                    }
+                }
+            }
+
             mailSender.send(message);
-            log.info("Email envoyé à: {}", to);
+            log.info("Email envoyé à: {}", payload.getTo());
 
         } catch (MessagingException e) {
             log.error("Erreur envoi email: {}", e.getMessage());
             throw new RuntimeException("Erreur d'envoi d'email", e);
         }
+    }
+
+    public void sendTestEmail(String to) {
+        String subject = "Test Email Spring Boot";
+        String content = "<html><body><h2>Ceci est un test d'envoi d'email depuis Spring Boot !</h2></body></html>";
+        sendSimpleEmail(to, subject, content);
     }
 
     public void sendDossierSoumis(String studentEmail, String studentName) {

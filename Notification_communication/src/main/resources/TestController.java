@@ -12,6 +12,6 @@ public class TestController {
 
     @GetMapping("/status")
     public String status() {
-        return "✅ Service Notification fonctionne sur le port 8084";
+        return " Service Notification fonctionne sur le port 8084";
     }
 }
