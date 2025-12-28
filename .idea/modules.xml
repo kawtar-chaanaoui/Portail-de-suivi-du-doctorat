@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/Portail de suivi du doctorat.iml" filepath="$PROJECT_DIR$/Portail de suivi du doctorat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/gaeway/gateway.iml" filepath="$PROJECT_DIR$/gaeway/gateway.iml" />
     </modules>
   </component>
 </project>
