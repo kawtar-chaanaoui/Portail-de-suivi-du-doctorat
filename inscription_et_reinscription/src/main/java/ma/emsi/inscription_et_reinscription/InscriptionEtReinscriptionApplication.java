@@ -4,8 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @EntityScan("ma.emsi.inscription_et_reinscription.entities")
 @EnableJpaRepositories("ma.emsi.inscription_et_reinscription.repositories")
 public class InscriptionEtReinscriptionApplication {

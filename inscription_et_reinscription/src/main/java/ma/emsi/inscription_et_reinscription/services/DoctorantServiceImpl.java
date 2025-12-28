@@ -29,6 +29,8 @@ public class DoctorantServiceImpl implements DoctorantService {
     @Autowired
     private DocumentService documentService;
 
+    @Autowired
+    private DerogationService derogationService;
 
     private ValidationService validationService;
 
@@ -63,11 +65,20 @@ public class DoctorantServiceImpl implements DoctorantService {
             Optional<Doctorant> inscriptionInitiale = doctorantRepository.findByCin(request.getCin());
             if (inscriptionInitiale.isPresent()) {
                 int duree = Year.now().getValue() - inscriptionInitiale.get().getAnneeInscriptionInitiale();
-                if (duree > 3) {
-                    throw new RuntimeException("Durée maximale de réinscription (3 ans) dépassée. Dérogation nécessaire.");
-                }
+                
+                // Vérifier la limite absolue de 6 ans
                 if (duree >= 6) {
-                    throw new RuntimeException("Durée maximale du doctorat (6 ans) atteinte");
+                    throw new RuntimeException("Durée maximale du doctorat (6 ans) atteinte. Réinscription impossible.");
+                }
+                
+                // Vérifier la limite de 3 ans
+                if (duree >= 3) {
+                    // Vérifier si une dérogation accordée existe
+                    boolean hasDerogation = derogationService.hasDerogationAccordee(inscriptionInitiale.get().getId());
+                    if (!hasDerogation) {
+                        throw new RuntimeException("Durée maximale de réinscription (3 ans) dépassée. " +
+                                "Une dérogation du PED est obligatoire pour poursuivre.");
+                    }
                 }
             }
         }
@@ -120,7 +131,16 @@ public class DoctorantServiceImpl implements DoctorantService {
         // Vérifier durée maximale de 6 ans
         int dureeTotale = Year.now().getValue() - existing.getAnneeInscriptionInitiale();
         if (dureeTotale >= 6) {
-            throw new RuntimeException("Durée maximale du doctorat (6 ans) atteinte");
+            throw new RuntimeException("Durée maximale du doctorat (6 ans) atteinte. Réinscription impossible.");
+        }
+
+        // Vérifier la limite de 3 ans
+        if (dureeTotale >= 3) {
+            boolean hasDerogation = derogationService.hasDerogationAccordee(doctorantId);
+            if (!hasDerogation) {
+                throw new RuntimeException("Durée de 3 ans dépassée. " +
+                        "Vous devez obtenir une dérogation du PED avant de vous réinscrire.");
+            }
         }
 
         // Vérifier qu'une campagne de réinscription est active
