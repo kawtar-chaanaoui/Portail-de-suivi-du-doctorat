@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="$PROJECT_DIR$/Soutenance/src/main/java/ma/emsi/soutenance/config/KafkaConfig.java">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/Soutenance/src/main/java/ma/emsi/soutenance/config/KafkaConfig.java" />
+              <option name="originalContent" value="package ma.emsi.soutenance.config;&#10;&#10;&#10;import org.apache.kafka.clients.admin.NewTopic;&#10;import org.springframework.context.annotation.Bean;&#10;import org.springframework.context.annotation.Configuration;&#10;import org.springframework.kafka.config.TopicBuilder;&#10;&#10;@Configuration&#10;public class KafkaConfig {&#10;&#10;    @Bean&#10;    public NewTopic soutenanceTopic() {&#10;        return TopicBuilder.name(&quot;notifications-soutenance&quot;)&#10;                .partitions(3)&#10;                .replicas(1)&#10;                .build();&#10;    }&#10;&#10;    @Bean&#10;    public NewTopic adminTopic() {&#10;        return TopicBuilder.name(&quot;notifications-admin&quot;)&#10;                .partitions(2)&#10;                .replicas(1)&#10;                .build();&#10;    }&#10;&#10;    @Bean&#10;    public NewTopic juryTopic() {&#10;        return TopicBuilder.name(&quot;notifications-jury&quot;)&#10;                .partitions(2)&#10;                .replicas(1)&#10;                .build();&#10;    }&#10;}" />
+              <option name="updatedContent" value="package ma.emsi.soutenance.config;&#10;&#10;&#10;import org.apache.kafka.clients.admin.NewTopic;&#10;import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;&#10;import org.springframework.context.annotation.Bean;&#10;import org.springframework.context.annotation.Configuration;&#10;import org.springframework.kafka.config.TopicBuilder;&#10;&#10;@Configuration&#10;@ConditionalOnProperty(name = &quot;spring.kafka.bootstrap-servers&quot;)&#10;public class KafkaConfig {&#10;&#10;    @Bean&#10;    public NewTopic soutenanceTopic() {&#10;        return TopicBuilder.name(&quot;notifications-soutenance&quot;)&#10;                .partitions(3)&#10;                .replicas(1)&#10;                .build();&#10;    }&#10;&#10;    @Bean&#10;    public NewTopic adminTopic() {&#10;        return TopicBuilder.name(&quot;notifications-admin&quot;)&#10;                .partitions(2)&#10;                .replicas(1)&#10;                .build();&#10;    }&#10;&#10;    @Bean&#10;    public NewTopic juryTopic() {&#10;        return TopicBuilder.name(&quot;notifications-jury&quot;)&#10;                .partitions(2)&#10;                .replicas(1)&#10;                .build();&#10;    }&#10;}" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+        <entry key="$PROJECT_DIR$/Soutenance/start-service.bat">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="$PROJECT_DIR$/Soutenance/start-service.bat" />
+              <option name="updatedContent" value="@echo off&#10;echo &quot;Demarrage du microservice Soutenance...&quot;&#10;echo &quot;Port: 8084&quot;&#10;echo &quot;Profile: dev&quot;&#10;&#10;mvn clean install&#10;if %ERRORLEVEL% EQU 0 (&#10;    echo &quot;Build successful - Lancement du service...&quot;&#10;    mvn spring-boot:run&#10;) else (&#10;    echo &quot;Erreur de build - Verification des dependances...&quot;&#10;    pause&#10;)" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>

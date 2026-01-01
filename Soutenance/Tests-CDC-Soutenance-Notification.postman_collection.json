@@ -1,0 +1,1052 @@
+{
+  "info": {
+    "name": "CDC - Tests Soutenance & Notification",
+    "description": "Tests basés sur le cahier des charges - Module 3 (Soutenance) et Module 4 (Notification)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "soutenance_url",
+      "value": "http://localhost:8084"
+    },
+    {
+      "key": "notification_url",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "soutenanceId",
+      "value": ""
+    },
+    {
+      "key": "juryId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "doctorantEmail",
+      "value": "jean.dupont@doctorant.ma"
+    },
+    {
+      "key": "directeurEmail",
+      "value": "prof.martin@univ.ma"
+    }
+  ],
+  "item": [
+    {
+      "name": "SCENARIO COMPLET CDC - Processus de Soutenance avec Notifications",
+      "description": "Workflow complet conforme au cahier des charges",
+      "item": [
+        {
+          "name": "Étape 1 - Demande de soutenance par le doctorant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC: Le doctorant soumet sa demande de soutenance",
+                  "pm.test(\"[CDC] Demande créée avec succès\", function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"[CDC] ID soutenance généré\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set('soutenanceId', jsonData.id);",
+                  "    console.log('✅ Soutenance créée - ID: ' + jsonData.id);",
+                  "});",
+                  "",
+                  "pm.test(\"[CDC] Statut initial EN_ATTENTE\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.statut).to.equal('EN_ATTENTE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorantId\": 1,\n  \"doctorantNom\": \"Jean DUPONT\",\n  \"doctorantEmail\": \"{{doctorantEmail}}\",\n  \"directeurId\": 2,\n  \"directeurNom\": \"Prof. Ahmed MARTIN\",\n  \"directeurEmail\": \"{{directeurEmail}}\",\n  \"titreThese\": \"Intelligence Artificielle appliquée au diagnostic médical\",\n  \"specialite\": \"Informatique\",\n  \"laboratoire\": \"LISI\",\n  \"etablissement\": \"ENSIAS\"\n}"
+            },
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/demande",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "demande"]
+            }
+          }
+        },
+        {
+          "name": "Étape 2 - Notification envoyée au doctorant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC Module 4: Notification automatique",
+                  "pm.test(\"[CDC] Notification programmée\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.exist;",
+                  "    console.log('✅ Notification envoyée: Demande de soutenance reçue');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientEmail\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean DUPONT\",\n  \"subject\": \"Demande de soutenance enregistrée\",\n  \"body\": \"Votre demande de soutenance a été enregistrée avec succès. Elle est en attente de vérification des prérequis.\",\n  \"templateCode\": \"DEMANDE_SOUTENANCE_RECUE\"\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/send-email",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "send-email"]
+            }
+          }
+        },
+        {
+          "name": "Étape 3 - Upload documents obligatoires (CDC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC: Documents obligatoires à fournir",
+                  "pm.test(\"[CDC] Document uploadé\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('documentId', jsonData.id);",
+                  "        console.log('✅ Document uploadé - ID: ' + jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "soutenanceId",
+                  "value": "{{soutenanceId}}",
+                  "type": "text",
+                  "description": "ID de la soutenance"
+                },
+                {
+                  "key": "typeDocument",
+                  "value": "RAPPORT_THESE",
+                  "type": "text",
+                  "description": "CDC: Rapport de thèse obligatoire"
+                },
+                {
+                  "key": "fichier",
+                  "type": "file",
+                  "src": "",
+                  "description": "Fichier PDF du rapport"
+                },
+                {
+                  "key": "depotPar",
+                  "value": "Jean DUPONT",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{soutenance_url}}/api/documents/upload",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "documents", "upload"]
+            },
+            "description": "CDC: Upload du rapport de thèse (document obligatoire)"
+          }
+        },
+        {
+          "name": "Étape 4 - Upload rapport anti-plagiat (CDC)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "soutenanceId",
+                  "value": "{{soutenanceId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "typeDocument",
+                  "value": "RAPPORT_ANTIPLAGIAT",
+                  "type": "text",
+                  "description": "CDC: Rapport anti-plagiat obligatoire"
+                },
+                {
+                  "key": "fichier",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "depotPar",
+                  "value": "Jean DUPONT",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{soutenance_url}}/api/documents/upload",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "documents", "upload"]
+            },
+            "description": "CDC: Rapport anti-plagiat (document obligatoire)"
+          }
+        },
+        {
+          "name": "Étape 5 - Upload rapport publications (CDC)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "soutenanceId",
+                  "value": "{{soutenanceId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "typeDocument",
+                  "value": "RAPPORT_PUBLICATIONS",
+                  "type": "text",
+                  "description": "CDC: Rapport publications et communications"
+                },
+                {
+                  "key": "fichier",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "depotPar",
+                  "value": "Jean DUPONT",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{soutenance_url}}/api/documents/upload",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "documents", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Étape 6 - Upload attestations formations (CDC)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "soutenanceId",
+                  "value": "{{soutenanceId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "typeDocument",
+                  "value": "ATTESTATIONS_FORMATIONS",
+                  "type": "text",
+                  "description": "CDC: Attestations formations (200h requises)"
+                },
+                {
+                  "key": "fichier",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "depotPar",
+                  "value": "Jean DUPONT",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{soutenance_url}}/api/documents/upload",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "documents", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Étape 7 - Validation des documents par l'admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"[CDC] Document validé\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ Document validé par l\\'administration');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/documents/{{documentId}}/valider?valide=true&commentaire=Document conforme aux exigences",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "documents", "{{documentId}}", "valider"],
+              "query": [
+                {
+                  "key": "valide",
+                  "value": "true"
+                },
+                {
+                  "key": "commentaire",
+                  "value": "Document conforme aux exigences"
+                }
+              ]
+            },
+            "description": "CDC: Validation administrative des documents"
+          }
+        },
+        {
+          "name": "Étape 8 - Vérification prérequis soutenance (CDC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC: Prérequis obligatoires",
+                  "// - Au moins 2 articles journaux (Q1/Q2)",
+                  "// - Au moins 2 conférences",
+                  "// - 200h de formation",
+                  "pm.test(\"[CDC] Vérification prérequis effectuée\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ Vérification des prérequis CDC lancée');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/{{soutenanceId}}/verifier-prerequis",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "{{soutenanceId}}", "verifier-prerequis"]
+            },
+            "description": "CDC: Check-list prérequis (publications, formations, documents)"
+          }
+        },
+        {
+          "name": "Étape 9 - Consulter prérequis validés",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"[CDC] Prérequis consultables\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    console.log('📋 Prérequis:', JSON.stringify(jsonData, null, 2));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/prerequis/soutenance/{{soutenanceId}}",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Étape 10 - Proposition jury par Directeur (CDC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC: Proposition du jury par le Directeur de Thèse",
+                  "pm.test(\"[CDC] Jury proposé\", function() {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('juryId', jsonData.id);",
+                  "        console.log('✅ Jury proposé - ID: ' + jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"soutenanceId\": {{soutenanceId}},\n  \"directeurTheseId\": 2,\n  \"directeurNom\": \"Prof. Ahmed MARTIN\",\n  \"membres\": [\n    {\n      \"nomComplet\": \"Prof. Mohammed ALAMI\",\n      \"email\": \"m.alami@univ.ma\",\n      \"institution\": \"Université Mohammed V - Rabat\",\n      \"grade\": \"Professeur\",\n      \"role\": \"PRESIDENT\"\n    },\n    {\n      \"nomComplet\": \"Prof. Fatima BENNANI\",\n      \"email\": \"f.bennani@univ.ma\",\n      \"institution\": \"Université Hassan II - Casablanca\",\n      \"grade\": \"Professeur\",\n      \"role\": \"RAPPORTEUR\"\n    },\n    {\n      \"nomComplet\": \"Dr. Karim IDRISSI\",\n      \"email\": \"k.idrissi@univ.ma\",\n      \"institution\": \"ENSIAS\",\n      \"grade\": \"Maitre de conferences\",\n      \"role\": \"RAPPORTEUR\"\n    },\n    {\n      \"nomComplet\": \"Dr. Amina TAHIRI\",\n      \"email\": \"a.tahiri@univ.ma\",\n      \"institution\": \"ENSIAS\",\n      \"grade\": \"Maitre de conferences\",\n      \"role\": \"EXAMINATEUR\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{soutenance_url}}/api/jurys/proposer",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "jurys", "proposer"]
+            },
+            "description": "CDC: Le directeur de thèse propose les membres du jury (rapporteurs, examinateurs, président)"
+          }
+        },
+        {
+          "name": "Étape 11 - Notification proposition jury",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientEmail\": \"{{directeurEmail}}\",\n  \"studentName\": \"Jean DUPONT\",\n  \"subject\": \"Composition du jury proposée\",\n  \"body\": \"La composition du jury pour la soutenance a été enregistrée. En attente de validation administrative.\",\n  \"variables\": {\n    \"juryMembers\": \"Prof. ALAMI, Prof. BENNANI, Dr. IDRISSI, Dr. TAHIRI\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/reunion-jury",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "reunion-jury"]
+            },
+            "description": "CDC Module 4: Notification automatique"
+          }
+        },
+        {
+          "name": "Étape 12 - Validation jury par administration",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"[CDC] Jury validé par administration\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ Jury validé par l\\'administration');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/jurys/{{juryId}}/valider",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "jurys", "{{juryId}}", "valider"]
+            },
+            "description": "CDC: Validation administrative du jury proposé"
+          }
+        },
+        {
+          "name": "Étape 13 - Génération autorisation soutenance (CDC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC Module 4: Génération document PDF",
+                  "pm.test(\"[CDC] Autorisation générée\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ Autorisation de soutenance générée (PDF)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorantNom\": \"Jean DUPONT\",\n  \"titreThese\": \"Intelligence Artificielle appliquée au diagnostic médical\",\n  \"dateSoutenance\": \"2026-06-15\",\n  \"lieuSoutenance\": \"ENSIAS - Amphithéâtre A\"\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/documents/autorisation-soutenance",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "documents", "autorisation-soutenance"]
+            },
+            "description": "CDC Module 4: Génération du PDF d'autorisation de soutenance"
+          }
+        },
+        {
+          "name": "Étape 14 - Notification autorisation accordée",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientEmail\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean DUPONT\",\n  \"subject\": \"Autorisation de soutenance accordée\",\n  \"body\": \"Félicitations ! Votre autorisation de soutenance a été accordée. Vous recevrez prochainement la date et le lieu.\"\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/soutenance-autorisee",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "soutenance-autorisee"]
+            },
+            "description": "CDC: Notification automatique d'autorisation"
+          }
+        },
+        {
+          "name": "Étape 15 - Planification soutenance (CDC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC: Planification administrative",
+                  "pm.test(\"[CDC] Soutenance planifiée\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ Date, heure et lieu fixés par l\\'administration');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/{{soutenanceId}}/planifier?date=2026-06-15T14:00:00&lieu=ENSIAS&salle=Amphitheatre A",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "{{soutenanceId}}", "planifier"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-06-15T14:00:00"
+                },
+                {
+                  "key": "lieu",
+                  "value": "ENSIAS"
+                },
+                {
+                  "key": "salle",
+                  "value": "Amphitheatre A"
+                }
+              ]
+            },
+            "description": "CDC: L'administration fixe et communique la date, heure et lieu"
+          }
+        },
+        {
+          "name": "Étape 16 - Notification soutenance planifiée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"[CDC] Notification planification envoyée\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ Notification envoyée: Date et lieu communiqués');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientEmail\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean DUPONT\",\n  \"subject\": \"Date de soutenance confirmée\",\n  \"body\": \"Votre soutenance est fixée au 15 juin 2026 à 14h00 à l'Amphithéâtre A de l'ENSIAS.\",\n  \"variables\": {\n    \"defenseDate\": \"15 juin 2026 à 14h00\",\n    \"defenseLocation\": \"ENSIAS - Amphithéâtre A\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/soutenance-planifiee",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "soutenance-planifiee"]
+            },
+            "description": "CDC Module 4: Communication de la date/lieu"
+          }
+        },
+        {
+          "name": "Étape 17 - Consulter état final soutenance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"[CDC] Soutenance PLANIFIEE\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.statut).to.equal('PLANIFIEE');",
+                  "    console.log('📊 État final:', jsonData.statut);",
+                  "    console.log('📅 Date:', jsonData.dateSoutenance);",
+                  "    console.log('📍 Lieu:', jsonData.lieuSoutenance);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/{{soutenanceId}}",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "{{soutenanceId}}"]
+            }
+          }
+        },
+        {
+          "name": "Étape 18 - Vérifier historique notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC Module 4: Traçabilité des notifications",
+                  "pm.test(\"[CDC] Historique notifications disponible\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "    console.log('📧 Nombre de notifications:', jsonData.length);",
+                  "    jsonData.forEach(function(notif, index) {",
+                  "        console.log((index+1) + '. ' + notif.subject + ' - ' + notif.status);",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notification_url}}/api/notifications?email={{doctorantEmail}}",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{doctorantEmail}}"
+                }
+              ]
+            },
+            "description": "Vérification de toutes les notifications envoyées au doctorant"
+          }
+        },
+        {
+          "name": "Étape 19 - Terminer soutenance avec résultat",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"[CDC] Soutenance terminée\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.statut).to.equal('TERMINEE');",
+                  "    console.log('✅ Soutenance terminée - Résultat:', jsonData.resultat);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/{{soutenanceId}}/terminer?resultat=ADMIS&mention=TRES_HONORABLE",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "{{soutenanceId}}", "terminer"],
+              "query": [
+                {
+                  "key": "resultat",
+                  "value": "ADMIS"
+                },
+                {
+                  "key": "mention",
+                  "value": "TRES_HONORABLE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Étape 20 - Générer procès-verbal (CDC)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC Module 4: Génération PV",
+                  "pm.test(\"[CDC] Procès-verbal généré\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    console.log('✅ Procès-verbal de soutenance généré (PDF)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorantNom\": \"Jean DUPONT\",\n  \"titreThese\": \"Intelligence Artificielle appliquée au diagnostic médical\",\n  \"dateSoutenance\": \"2026-06-15\",\n  \"resultat\": \"ADMIS\",\n  \"mention\": \"Très Honorable avec félicitations du jury\",\n  \"membresJury\": [\n    \"Prof. Mohammed ALAMI (Président)\",\n    \"Prof. Fatima BENNANI (Rapporteur)\",\n    \"Dr. Karim IDRISSI (Rapporteur)\",\n    \"Dr. Amina TAHIRI (Examinateur)\",\n    \"Prof. Ahmed MARTIN (Directeur de thèse)\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/documents/proces-verbal",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "documents", "proces-verbal"]
+            },
+            "description": "CDC Module 4: Génération du procès-verbal pré-rempli"
+          }
+        }
+      ]
+    },
+    {
+      "name": "TESTS CDC - Module 3 (Soutenance)",
+      "description": "Tests individuels du module Soutenance selon CDC",
+      "item": [
+        {
+          "name": "CDC - Vérification prérequis (2 articles Q1/Q2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// CDC: Au moins 2 articles journaux (Q1/Q2)",
+                  "pm.test(\"[CDC] Vérification articles\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/prerequis/soutenance/{{soutenanceId}}/valides",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}", "valides"]
+            },
+            "description": "Vérification du prérequis CDC: 2 articles Q1/Q2"
+          }
+        },
+        {
+          "name": "CDC - Vérification formations (200h)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/prerequis/soutenance/{{soutenanceId}}",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}"]
+            },
+            "description": "CDC: Vérifier que le doctorant a complété 200h de formation"
+          }
+        },
+        {
+          "name": "CDC - Liste documents par soutenance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/documents/soutenance/{{soutenanceId}}",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "documents", "soutenance", "{{soutenanceId}}"]
+            },
+            "description": "CDC: Lister tous les documents obligatoires fournis"
+          }
+        },
+        {
+          "name": "CDC - Consulter composition jury",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/jurys/soutenance/{{soutenanceId}}",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "jurys", "soutenance", "{{soutenanceId}}"]
+            },
+            "description": "CDC: Voir la composition du jury proposée par le directeur"
+          }
+        },
+        {
+          "name": "CDC - Recherche soutenances par statut",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/statut/PLANIFIEE",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "statut", "PLANIFIEE"]
+            },
+            "description": "Liste des soutenances planifiées"
+          }
+        },
+        {
+          "name": "CDC - Soutenances par doctorant",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/doctorant/1",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "doctorant", "1"]
+            },
+            "description": "Historique des soutenances d'un doctorant"
+          }
+        },
+        {
+          "name": "CDC - Soutenances par directeur",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/directeur/2",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "directeur", "2"]
+            },
+            "description": "Soutenances supervisées par un directeur"
+          }
+        }
+      ]
+    },
+    {
+      "name": "TESTS CDC - Module 4 (Notification)",
+      "description": "Tests individuels du module Notification selon CDC",
+      "item": [
+        {
+          "name": "CDC - Email personnalisé",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{doctorantEmail}}\",\n  \"subject\": \"Information importante\",\n  \"content\": \"Ceci est une notification personnalisée du système\",\n  \"templateCode\": \"CUSTOM\"\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/send-email",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "send-email"]
+            },
+            "description": "CDC Module 4: Envoi d'emails automatiques"
+          }
+        },
+        {
+          "name": "CDC - Créer template email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"RAPPEL_DOCUMENT_MANQUANT\",\n  \"subject\": \"Documents manquants pour votre dossier\",\n  \"body\": \"Bonjour {{studentName}}, il manque encore {{missingDocs}} pour compléter votre dossier de soutenance.\",\n  \"language\": \"FR\"\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/templates",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "templates"]
+            },
+            "description": "CDC: Gestion des templates d'emails"
+          }
+        },
+        {
+          "name": "CDC - Lister tous les templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notification_url}}/api/templates",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "templates"]
+            }
+          }
+        },
+        {
+          "name": "CDC - Notifications par utilisateur",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notification_url}}/api/notifications?email={{doctorantEmail}}",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications"],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{doctorantEmail}}"
+                }
+              ]
+            },
+            "description": "CDC: Historique des notifications d'un utilisateur"
+          }
+        },
+        {
+          "name": "CDC - Marquer notification lue",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{notification_url}}/api/notifications/{{notificationId}}/read",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "notifications", "{{notificationId}}", "read"]
+            }
+          }
+        },
+        {
+          "name": "CDC - Générer attestation inscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorantId\": 1,\n  \"doctorantNom\": \"Jean DUPONT\",\n  \"anneeUniversitaire\": \"2025-2026\",\n  \"specialite\": \"Informatique\"\n}"
+            },
+            "url": {
+              "raw": "{{notification_url}}/api/documents/attestation-inscription",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "documents", "attestation-inscription"]
+            },
+            "description": "CDC Module 4: Génération de documents PDF"
+          }
+        },
+        {
+          "name": "CDC - Test envoi email SMTP",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notification_url}}/api/email/test",
+              "host": ["{{notification_url}}"],
+              "path": ["api", "email", "test"]
+            },
+            "description": "Test configuration email"
+          }
+        }
+      ]
+    },
+    {
+      "name": "TESTS CDC - Règles de gestion",
+      "description": "Tests des règles de gestion du cahier des charges",
+      "item": [
+        {
+          "name": "RÈGLE - Durée doctorat (max 3 ans sans dérogation)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/soutenances/doctorant/1",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "soutenances", "doctorant", "1"]
+            },
+            "description": "CDC: Vérifier qu'on ne dépasse pas 3 ans sans dérogation"
+          }
+        },
+        {
+          "name": "RÈGLE - Prérequis publications (2 Q1/Q2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/prerequis/soutenance/{{soutenanceId}}/valides",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}", "valides"]
+            },
+            "description": "CDC: Au moins 2 articles journaux Q1/Q2"
+          }
+        },
+        {
+          "name": "RÈGLE - Prérequis conférences (2 minimum)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/prerequis/soutenance/{{soutenanceId}}",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}"]
+            },
+            "description": "CDC: Au moins 2 conférences ou équivalent"
+          }
+        },
+        {
+          "name": "RÈGLE - Formations (200h obligatoires)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_url}}/api/prerequis/soutenance/{{soutenanceId}}",
+              "host": ["{{soutenance_url}}"],
+              "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}"]
+            },
+            "description": "CDC: Compléter 200h de formation doctorale"
+          }
+        }
+      ]
+    }
+  ]
+}

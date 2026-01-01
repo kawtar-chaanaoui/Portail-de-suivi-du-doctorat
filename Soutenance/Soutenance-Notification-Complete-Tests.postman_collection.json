@@ -1,0 +1,1039 @@
+{
+  "info": {
+    "name": "Soutenance & Notification - Tests Complets",
+    "description": "Tests indépendants et d'intégration pour Soutenance et Notification",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "soutenance-notification-tests"
+  },
+  "variable": [
+    {
+      "key": "soutenance_host",
+      "value": "http://localhost:8084"
+    },
+    {
+      "key": "notification_host",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "gateway_host",
+      "value": "http://localhost:8888"
+    },
+    {
+      "key": "soutenanceId",
+      "value": ""
+    },
+    {
+      "key": "juryId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "doctorantEmail",
+      "value": "jean.dupont@example.com"
+    }
+  ],
+  "item": [
+    {
+      "name": "SCENARIO COMPLET - Intégration Soutenance + Notification",
+      "description": "Workflow complet de A à Z avec vérification des notifications",
+      "item": [
+        {
+          "name": "1. Créer demande soutenance (→ Notification)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 201 Created\", function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test(\"Récupération soutenanceId\", function() {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set('soutenanceId', jsonData.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorantId\": 1,\n  \"doctorantNom\": \"Jean Dupont\",\n  \"doctorantEmail\": \"{{doctorantEmail}}\",\n  \"directeurId\": 2,\n  \"directeurNom\": \"Prof. Martin\",\n  \"directeurEmail\": \"prof.martin@univ.fr\",\n  \"titreThese\": \"Intelligence Artificielle pour la médecine\",\n  \"specialite\": \"Informatique\"\n}"
+            },
+            "url": {
+              "raw": "{{soutenance_host}}/api/soutenances/demande",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "soutenances", "demande"]
+            }
+          }
+        },
+        {
+          "name": "2. Vérifier notification demande créée",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Notifications reçues\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "    if (jsonData.length > 0) {",
+                  "        pm.collectionVariables.set('notificationId', jsonData[0].id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notification_host}}/api/notifications?email={{doctorantEmail}}",
+              "host": ["{{notification_host}}"],
+              "path": ["api", "notifications"],
+              "query": [{"key": "email", "value": "{{doctorantEmail}}"}]
+            }
+          }
+        },
+        {
+          "name": "3. Upload document thèse (→ Notification)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Document uploadé\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('documentId', jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "soutenanceId", "value": "{{soutenanceId}}", "type": "text"},
+                {"key": "typeDocument", "value": "RAPPORT_THESE", "type": "text"},
+                {"key": "fichier", "type": "file", "src": ""},
+                {"key": "depotPar", "value": "Jean Dupont", "type": "text"}
+              ]
+            },
+            "url": {
+              "raw": "{{soutenance_host}}/api/documents/upload",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "documents", "upload"]
+            }
+          }
+        },
+        {
+          "name": "4. Valider document (→ Notification)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Document validé\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_host}}/api/documents/{{documentId}}/valider?valide=true&commentaire=Document conforme",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "documents", "{{documentId}}", "valider"],
+              "query": [
+                {"key": "valide", "value": "true"},
+                {"key": "commentaire", "value": "Document conforme"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "5. Vérifier prérequis (→ Notification)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}/verifier-prerequis",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "soutenances", "{{soutenanceId}}", "verifier-prerequis"]
+            }
+          }
+        },
+        {
+          "name": "6. Proposer jury (→ Notification)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Jury proposé\", function() {",
+                  "    pm.response.to.have.status(201);",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set('juryId', jsonData.id);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"soutenanceId\": {{soutenanceId}},\n  \"directeurTheseId\": 2,\n  \"directeurNom\": \"Prof. Martin\",\n  \"membres\": [\n    {\n      \"nomComplet\": \"Dr. Pierre Durant\",\n      \"email\": \"pierre.durant@univ.fr\",\n      \"institution\": \"Université Paris\",\n      \"grade\": \"Professeur\",\n      \"role\": \"PRESIDENT\"\n    },\n    {\n      \"nomComplet\": \"Dr. Marie Leblanc\",\n      \"email\": \"marie.leblanc@univ.fr\",\n      \"institution\": \"Université Lyon\",\n      \"grade\": \"Maitre de conferences\",\n      \"role\": \"RAPPORTEUR\"\n    },\n    {\n      \"nomComplet\": \"Dr. Jean Bernard\",\n      \"email\": \"jean.bernard@univ.fr\",\n      \"institution\": \"Université Bordeaux\",\n      \"grade\": \"Professeur\",\n      \"role\": \"RAPPORTEUR\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{soutenance_host}}/api/jurys/proposer",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "jurys", "proposer"]
+            }
+          }
+        },
+        {
+          "name": "7. Valider jury (→ Notification)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_host}}/api/jurys/{{juryId}}/valider",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "jurys", "{{juryId}}", "valider"]
+            }
+          }
+        },
+        {
+          "name": "8. Planifier soutenance (→ Notification)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}/planifier?date=2026-06-15T14:00:00&lieu=Amphitheatre A&salle=Salle 101",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "soutenances", "{{soutenanceId}}", "planifier"],
+              "query": [
+                {"key": "date", "value": "2026-06-15T14:00:00"},
+                {"key": "lieu", "value": "Amphitheatre A"},
+                {"key": "salle", "value": "Salle 101"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "9. Vérifier toutes les notifications",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Plusieurs notifications reçues\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.be.an('array');",
+                  "    pm.expect(jsonData.length).to.be.above(0);",
+                  "    console.log('Nombre de notifications:', jsonData.length);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{notification_host}}/api/notifications?email={{doctorantEmail}}",
+              "host": ["{{notification_host}}"],
+              "path": ["api", "notifications"],
+              "query": [{"key": "email", "value": "{{doctorantEmail}}"}]
+            }
+          }
+        },
+        {
+          "name": "10. État final de la soutenance",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Soutenance PLANIFIEE\", function() {",
+                  "    pm.response.to.have.status(200);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.statut).to.equal('PLANIFIEE');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}",
+              "host": ["{{soutenance_host}}"],
+              "path": ["api", "soutenances", "{{soutenanceId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "TESTS INDEPENDANTS - Microservice Soutenance",
+      "description": "Tests du microservice Soutenance seul",
+      "item": [
+        {
+          "name": "Soutenances",
+          "item": [
+            {
+              "name": "Créer demande soutenance",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                      "pm.test(\"ID généré\", () => {",
+                      "    const data = pm.response.json();",
+                      "    pm.expect(data).to.have.property('id');",
+                      "    pm.collectionVariables.set('soutenanceId', data.id);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"doctorantId\": 1,\n  \"doctorantNom\": \"Jean Dupont\",\n  \"doctorantEmail\": \"jean.dupont@example.com\",\n  \"directeurId\": 2,\n  \"directeurNom\": \"Prof. Martin\",\n  \"titreThese\": \"IA en médecine\"\n}"
+                },
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/demande",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "demande"]
+                }
+              }
+            },
+            {
+              "name": "Consulter soutenance par ID",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                      "pm.test(\"Données complètes\", () => {",
+                      "    const data = pm.response.json();",
+                      "    pm.expect(data).to.have.property('doctorantNom');",
+                      "    pm.expect(data).to.have.property('statut');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "{{soutenanceId}}"]
+                }
+              }
+            },
+            {
+              "name": "Soutenances par doctorant",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/doctorant/1",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "doctorant", "1"]
+                }
+              }
+            },
+            {
+              "name": "Soutenances par directeur",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/directeur/2",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "directeur", "2"]
+                }
+              }
+            },
+            {
+              "name": "Recherche par statut",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/statut/EN_ATTENTE",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "statut", "EN_ATTENTE"]
+                }
+              }
+            },
+            {
+              "name": "Soumettre demande",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}/soumettre",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "{{soutenanceId}}", "soumettre"]
+                }
+              }
+            },
+            {
+              "name": "Vérifier prérequis",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}/verifier-prerequis",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "{{soutenanceId}}", "verifier-prerequis"]
+                }
+              }
+            },
+            {
+              "name": "Planifier soutenance",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}/planifier?date=2026-06-15T14:00:00&lieu=Amphitheatre A&salle=Salle 101",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "{{soutenanceId}}", "planifier"],
+                  "query": [
+                    {"key": "date", "value": "2026-06-15T14:00:00"},
+                    {"key": "lieu", "value": "Amphitheatre A"},
+                    {"key": "salle", "value": "Salle 101"}
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Terminer soutenance",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/soutenances/{{soutenanceId}}/terminer?resultat=ADMIS&mention=TRES_HONORABLE",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "soutenances", "{{soutenanceId}}", "terminer"],
+                  "query": [
+                    {"key": "resultat", "value": "ADMIS"},
+                    {"key": "mention", "value": "TRES_HONORABLE"}
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documents",
+          "item": [
+            {
+              "name": "Upload document",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Document uploadé\", () => {",
+                      "    pm.response.to.have.status(200);",
+                      "    const data = pm.response.json();",
+                      "    if (data.id) pm.collectionVariables.set('documentId', data.id);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {"key": "soutenanceId", "value": "{{soutenanceId}}", "type": "text"},
+                    {"key": "typeDocument", "value": "RAPPORT_THESE", "type": "text"},
+                    {"key": "fichier", "type": "file", "src": ""},
+                    {"key": "depotPar", "value": "Jean Dupont", "type": "text"}
+                  ]
+                },
+                "url": {
+                  "raw": "{{soutenance_host}}/api/documents/upload",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "documents", "upload"]
+                }
+              }
+            },
+            {
+              "name": "Documents par soutenance",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/documents/soutenance/{{soutenanceId}}",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "documents", "soutenance", "{{soutenanceId}}"]
+                }
+              }
+            },
+            {
+              "name": "Valider document",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/documents/{{documentId}}/valider?valide=true&commentaire=Document conforme",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "documents", "{{documentId}}", "valider"],
+                  "query": [
+                    {"key": "valide", "value": "true"},
+                    {"key": "commentaire", "value": "Document conforme"}
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Télécharger document",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/documents/{{documentId}}/download",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "documents", "{{documentId}}", "download"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Jury",
+          "item": [
+            {
+              "name": "Proposer jury",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Jury créé\", () => {",
+                      "    pm.response.to.have.status(201);",
+                      "    const data = pm.response.json();",
+                      "    if (data.id) pm.collectionVariables.set('juryId', data.id);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"soutenanceId\": {{soutenanceId}},\n  \"directeurTheseId\": 2,\n  \"directeurNom\": \"Prof. Martin\",\n  \"membres\": [\n    {\n      \"nomComplet\": \"Dr. Pierre Durant\",\n      \"email\": \"pierre.durant@univ.fr\",\n      \"institution\": \"Université Paris\",\n      \"grade\": \"Professeur\",\n      \"role\": \"PRESIDENT\"\n    },\n    {\n      \"nomComplet\": \"Dr. Marie Leblanc\",\n      \"email\": \"marie.leblanc@univ.fr\",\n      \"institution\": \"Université Lyon\",\n      \"grade\": \"Maitre de conferences\",\n      \"role\": \"RAPPORTEUR\"\n    }\n  ]\n}"
+                },
+                "url": {
+                  "raw": "{{soutenance_host}}/api/jurys/proposer",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "jurys", "proposer"]
+                }
+              }
+            },
+            {
+              "name": "Consulter jury",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/jurys/{{juryId}}",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "jurys", "{{juryId}}"]
+                }
+              }
+            },
+            {
+              "name": "Jury par soutenance",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/jurys/soutenance/{{soutenanceId}}",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "jurys", "soutenance", "{{soutenanceId}}"]
+                }
+              }
+            },
+            {
+              "name": "Valider jury",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/jurys/{{juryId}}/valider",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "jurys", "{{juryId}}", "valider"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Prérequis",
+          "item": [
+            {
+              "name": "Prérequis par soutenance",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/prerequis/soutenance/{{soutenanceId}}",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}"]
+                }
+              }
+            },
+            {
+              "name": "Vérifier prérequis valides",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/prerequis/soutenance/{{soutenanceId}}/valides",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}", "valides"]
+                }
+              }
+            },
+            {
+              "name": "Mettre à jour prérequis",
+              "request": {
+                "method": "PUT",
+                "header": [],
+                "url": {
+                  "raw": "{{soutenance_host}}/api/prerequis/1?verifie=true&valeurActuelle=3",
+                  "host": ["{{soutenance_host}}"],
+                  "path": ["api", "prerequis", "1"],
+                  "query": [
+                    {"key": "verifie", "value": "true"},
+                    {"key": "valeurActuelle", "value": "3"}
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TESTS INDEPENDANTS - Microservice Notification",
+      "description": "Tests du microservice Notification seul",
+      "item": [
+        {
+          "name": "Notifications",
+          "item": [
+            {
+              "name": "Envoyer email simple",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Notification programmée\", () => {",
+                      "    pm.response.to.have.status(200);",
+                      "    const data = pm.response.json();",
+                      "    pm.expect(data.message).to.include('programmée');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"to\": \"{{doctorantEmail}}\",\n  \"subject\": \"Test Email\",\n  \"content\": \"Ceci est un test d'envoi d'email\",\n  \"templateCode\": \"CUSTOM\"\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/send-email",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "send-email"]
+                }
+              }
+            },
+            {
+              "name": "Notification dossier soumis",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean Dupont\"\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/dossier-soumis",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "dossier-soumis"]
+                }
+              }
+            },
+            {
+              "name": "Notification dossier validé",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"studentEmail\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean Dupont\",\n  \"recipientEmail\": \"{{doctorantEmail}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/dossier-valide",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "dossier-valide"]
+                }
+              }
+            },
+            {
+              "name": "Notification réunion jury",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"recipientEmail\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean Dupont\",\n  \"variables\": {\n    \"juryDate\": \"2026-06-15\",\n    \"juryPlace\": \"Amphithéâtre A\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/reunion-jury",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "reunion-jury"]
+                }
+              }
+            },
+            {
+              "name": "Notification soutenance autorisée",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"recipientEmail\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean Dupont\"\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/soutenance-autorisee",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "soutenance-autorisee"]
+                }
+              }
+            },
+            {
+              "name": "Notification soutenance planifiée",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"recipientEmail\": \"{{doctorantEmail}}\",\n  \"studentName\": \"Jean Dupont\",\n  \"variables\": {\n    \"defenseDate\": \"2026-06-15 14:00\",\n    \"defenseLocation\": \"Amphithéâtre A, Salle 101\"\n  }\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/soutenance-planifiee",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "soutenance-planifiee"]
+                }
+              }
+            },
+            {
+              "name": "Lister toutes les notifications",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test(\"Liste reçue\", () => {",
+                      "    pm.response.to.have.status(200);",
+                      "    const data = pm.response.json();",
+                      "    pm.expect(data).to.be.an('array');",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications"]
+                }
+              }
+            },
+            {
+              "name": "Notifications par email",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications?email={{doctorantEmail}}",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications"],
+                  "query": [{"key": "email", "value": "{{doctorantEmail}}"}]
+                }
+              }
+            },
+            {
+              "name": "Notifications par recipientId",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications?recipientId=1",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications"],
+                  "query": [{"key": "recipientId", "value": "1"}]
+                }
+              }
+            },
+            {
+              "name": "Consulter notification par ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/{{notificationId}}",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "{{notificationId}}"]
+                }
+              }
+            },
+            {
+              "name": "Marquer notification comme lue",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/notifications/{{notificationId}}/read",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "notifications", "{{notificationId}}", "read"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Templates",
+          "item": [
+            {
+              "name": "Créer template",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"SOUTENANCE_REMINDER\",\n  \"subject\": \"Rappel - Votre soutenance approche\",\n  \"body\": \"Bonjour {{studentName}}, votre soutenance est prévue le {{defenseDate}}.\",\n  \"language\": \"FR\"\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/templates",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "templates"]
+                }
+              }
+            },
+            {
+              "name": "Lister templates",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/templates",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "templates"]
+                }
+              }
+            },
+            {
+              "name": "Template par nom",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/templates/SOUTENANCE_REMINDER",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "templates", "SOUTENANCE_REMINDER"]
+                }
+              }
+            },
+            {
+              "name": "Supprimer template",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/templates/1",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "templates", "1"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documents (Génération)",
+          "item": [
+            {
+              "name": "Générer attestation inscription",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"doctorantId\": 1,\n  \"doctorantNom\": \"Jean Dupont\",\n  \"anneeUniversitaire\": \"2025-2026\",\n  \"specialite\": \"Informatique\"\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/documents/attestation-inscription",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "documents", "attestation-inscription"]
+                }
+              }
+            },
+            {
+              "name": "Générer autorisation soutenance",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"doctorantNom\": \"Jean Dupont\",\n  \"titreThese\": \"IA en médecine\",\n  \"dateSoutenance\": \"2026-06-15\",\n  \"lieuSoutenance\": \"Amphithéâtre A\"\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/documents/autorisation-soutenance",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "documents", "autorisation-soutenance"]
+                }
+              }
+            },
+            {
+              "name": "Générer procès-verbal",
+              "request": {
+                "method": "POST",
+                "header": [{"key": "Content-Type", "value": "application/json"}],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"doctorantNom\": \"Jean Dupont\",\n  \"titreThese\": \"IA en médecine\",\n  \"dateSoutenance\": \"2026-06-15\",\n  \"resultat\": \"ADMIS\",\n  \"mention\": \"Très Honorable\",\n  \"membresJury\": [\"Dr. Pierre Durant\", \"Dr. Marie Leblanc\"]\n}"
+                },
+                "url": {
+                  "raw": "{{notification_host}}/api/documents/proces-verbal",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "documents", "proces-verbal"]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Test Email",
+          "item": [
+            {
+              "name": "Test envoi email",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{notification_host}}/api/email/test",
+                  "host": ["{{notification_host}}"],
+                  "path": ["api", "email", "test"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "TESTS VIA GATEWAY",
+      "description": "Tests d'accès via le Gateway (port 8888)",
+      "item": [
+        {
+          "name": "Soutenance via Gateway - Créer demande",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorantId\": 1,\n  \"doctorantNom\": \"Jean Dupont\",\n  \"doctorantEmail\": \"{{doctorantEmail}}\",\n  \"directeurId\": 2,\n  \"directeurNom\": \"Prof. Martin\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_host}}/api/soutenances/demande",
+              "host": ["{{gateway_host}}"],
+              "path": ["api", "soutenances", "demande"]
+            }
+          }
+        },
+        {
+          "name": "Notification via Gateway - Envoyer email",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{doctorantEmail}}\",\n  \"subject\": \"Test via Gateway\",\n  \"content\": \"Email envoyé via Gateway\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_host}}/api/notifications/send-email",
+              "host": ["{{gateway_host}}"],
+              "path": ["api", "notifications", "send-email"]
+            }
+          }
+        },
+        {
+          "name": "Gateway - Page d'accueil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_host}}/",
+              "host": ["{{gateway_host}}"],
+              "path": [""]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

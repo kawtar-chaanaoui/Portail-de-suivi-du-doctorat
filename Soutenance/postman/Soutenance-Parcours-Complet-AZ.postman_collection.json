@@ -1,0 +1,426 @@
+{
+  "info": {
+    "name": "Soutenance - Parcours Complet A-Z",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Test complet du microservice Soutenance couvrant tout le workflow:\n1. Création demande\n2. Upload documents\n3. Validation documents\n4. Vérification prérequis\n5. Proposition jury\n6. Validation jury\n7. Planification\n8. Terminaison"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8084"
+    },
+    {
+      "key": "soutenanceId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "juryId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Créer demande de soutenance",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Soutenance créée avec statut BROUILLON', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.id).to.be.a('number');",
+              "    pm.expect(jsonData.statut).to.eql('BROUILLON');",
+              "    pm.collectionVariables.set('soutenanceId', jsonData.id);",
+              "    console.log('Soutenance ID: ' + jsonData.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorantId\": 1,\n  \"doctorantNom\": \"Ahmed Ben Ali\",\n  \"doctorantEmail\": \"ahmed.benali@doctorant.ma\",\n  \"directeurId\": 10,\n  \"directeurNom\": \"Prof. Mohammed Alami\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/demande",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "demande"]
+        }
+      }
+    },
+    {
+      "name": "2. Consulter la demande",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Soutenance récupérée', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.doctorantNom).to.eql('Ahmed Ben Ali');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/{{soutenanceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "{{soutenanceId}}"]
+        }
+      }
+    },
+    {
+      "name": "3. Upload rapport de thèse",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Document uploadé', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.typeDocument).to.eql('RAPPORT_THESE');",
+              "    pm.expect(jsonData.statutValidation).to.eql('EN_ATTENTE');",
+              "    pm.collectionVariables.set('documentId', jsonData.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {"key": "soutenanceId", "value": "{{soutenanceId}}", "type": "text"},
+            {"key": "typeDocument", "value": "RAPPORT_THESE", "type": "text"},
+            {"key": "depotPar", "value": "Ahmed Ben Ali", "type": "text"},
+            {"key": "fichier", "type": "file", "src": ""}
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/documents/upload",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "documents", "upload"]
+        }
+      }
+    },
+    {
+      "name": "4. Valider le document",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Document validé', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.statutValidation).to.eql('VALIDE');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/documents/{{documentId}}/valider?valide=true&commentaire=Document conforme",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "documents", "{{documentId}}", "valider"],
+          "query": [
+            {"key": "valide", "value": "true"},
+            {"key": "commentaire", "value": "Document conforme"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. Lister documents soutenance",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Liste des documents retournée', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/documents/soutenance/{{soutenanceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "documents", "soutenance", "{{soutenanceId}}"]
+        }
+      }
+    },
+    {
+      "name": "6. Vérifier prérequis",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/{{soutenanceId}}/verifier-prerequis",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "{{soutenanceId}}", "verifier-prerequis"]
+        }
+      }
+    },
+    {
+      "name": "7. Consulter prérequis",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Prérequis retournés', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.be.an('array');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/prerequis/soutenance/{{soutenanceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "prerequis", "soutenance", "{{soutenanceId}}"]
+        }
+      }
+    },
+    {
+      "name": "8. Proposer jury",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Jury proposé', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.statut).to.eql('PROPOSE');",
+              "    pm.collectionVariables.set('juryId', jsonData.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Content-Type", "value": "application/json"}
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"soutenanceId\": {{soutenanceId}},\n  \"directeurTheseId\": 10,\n  \"directeurNom\": \"Prof. Mohammed Alami\",\n  \"membres\": [\n    {\n      \"nomComplet\": \"Prof. Karim Hassan\",\n      \"email\": \"karim.hassan@univ.ma\",\n      \"institution\": \"Université Hassan II\",\n      \"grade\": \"Professeur\",\n      \"role\": \"RAPPORTEUR\"\n    },\n    {\n      \"nomComplet\": \"Prof. Fatima Zahra\",\n      \"email\": \"fatima.zahra@univ.ma\",\n      \"institution\": \"ENSIAS\",\n      \"grade\": \"Professeur\",\n      \"role\": \"RAPPORTEUR\"\n    },\n    {\n      \"nomComplet\": \"Prof. Youssef Bennani\",\n      \"email\": \"youssef.bennani@univ.ma\",\n      \"institution\": \"EMI\",\n      \"grade\": \"Professeur\",\n      \"role\": \"PRESIDENT\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/jurys/proposer",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "jurys", "proposer"]
+        }
+      }
+    },
+    {
+      "name": "9. Valider jury",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Jury validé', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.statut).to.eql('VALIDE');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/jurys/{{juryId}}/valider",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "jurys", "{{juryId}}", "valider"]
+        }
+      }
+    },
+    {
+      "name": "10. Planifier soutenance",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Soutenance planifiée', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.statut).to.eql('PLANIFIEE');",
+              "    pm.expect(jsonData.lieu).to.eql('EMSI Casablanca');",
+              "    pm.expect(jsonData.numeroAutorisation).to.not.be.null;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/{{soutenanceId}}/planifier?date=2026-03-15T10:00:00&lieu=EMSI Casablanca&salle=Amphithéâtre A",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "{{soutenanceId}}", "planifier"],
+          "query": [
+            {"key": "date", "value": "2026-03-15T10:00:00"},
+            {"key": "lieu", "value": "EMSI Casablanca"},
+            {"key": "salle", "value": "Amphithéâtre A"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "11. Terminer soutenance",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Soutenance terminée', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.statut).to.eql('TERMINEE');",
+              "    pm.expect(jsonData.procesVerbalPath).to.not.be.null;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/{{soutenanceId}}/terminer?procesVerbalPath=/pv/soutenance_{{soutenanceId}}.pdf",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "{{soutenanceId}}", "terminer"],
+          "query": [
+            {"key": "procesVerbalPath", "value": "/pv/soutenance_{{soutenanceId}}.pdf"}
+          ]
+        }
+      }
+    },
+    {
+      "name": "12. Vérification état final",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function() {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('État final correct', function() {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.statut).to.eql('TERMINEE');",
+              "    console.log('✅ PARCOURS COMPLET RÉUSSI!');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/{{soutenanceId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "{{soutenanceId}}"]
+        }
+      }
+    },
+    {
+      "name": "13. Recherche par doctorant",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/doctorant/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "doctorant", "1"]
+        }
+      }
+    },
+    {
+      "name": "14. Recherche par directeur",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/directeur/10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "directeur", "10"]
+        }
+      }
+    },
+    {
+      "name": "15. Recherche par statut",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/statut/TERMINEE",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "soutenances", "statut", "TERMINEE"]
+        }
+      }
+    }
+  ]
+}

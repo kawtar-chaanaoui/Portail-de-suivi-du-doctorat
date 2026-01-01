@@ -10,5 +10,8 @@
     <file url="file://$PROJECT_DIR$/gateway-server/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/gateway-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/inscription_et_reinscription/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/inscription_et_reinscription/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
   </component>
 </project>

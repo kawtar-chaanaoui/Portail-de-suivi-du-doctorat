@@ -211,6 +211,73 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
+    @KafkaListener(
+        topics = {"notifications-soutenance", "notifications-directeurs", "notifications-admin", "notifications-jury"},
+        groupId = "soutenance-bridge-group",
+        containerFactory = "stringKafkaListenerContainerFactory"
+    )
+    public void handleSoutenanceEvent(String payload) {
+        log.info("Message Kafka Soutenance reçu : {}", payload);
+        if (payload == null || payload.isBlank()) {
+            return;
+        }
+
+        String[] parts = payload.split("\\|");
+        String type = parts[0];
+        Map<String, String> data = new HashMap<>();
+        for (int i = 1; i < parts.length; i++) {
+            String[] kv = parts[i].split(":", 2);
+            if (kv.length == 2) {
+                data.put(kv[0], kv[1]);
+            }
+        }
+
+        NotificationRequest req = new NotificationRequest();
+        req.setPersist(true);
+        req.setSendEmail(false); // pour ne pas dépendre du SMTP en dev
+
+        switch (type) {
+            case "NOUVELLE_DEMANDE" -> {
+                req.setEvent(Notification.NotificationEvent.SOUTENANCE_DEMANDEE);
+                req.setStudentEmail(data.get("doctorantEmail"));
+                req.setStudentName(data.get("doctorantNom"));
+            }
+            case "DEMANDE_A_VALIDER" -> {
+                // "dossier soumis" côté CDC : informer le doctorant
+                req.setEvent(Notification.NotificationEvent.SOUTENANCE_DEMANDEE);
+                req.setStudentEmail(data.get("doctorantEmail"));
+                req.setStudentName(data.get("doctorantNom"));
+            }
+            case "JURY_PROPOSE" -> {
+                req.setEvent(Notification.NotificationEvent.JURY_PROPOSE);
+            }
+            case "SOUTENANCE_PLANIFIEE" -> {
+                req.setEvent(Notification.NotificationEvent.SOUTENANCE_PLANIFIEE);
+                req.setStudentEmail(data.get("doctorantEmail"));
+                req.setStudentName(data.get("doctorantNom"));
+                req.setDate(data.get("date"));
+                req.setLieu(data.get("lieu"));
+            }
+            default -> {
+                log.warn("Type de message Soutenance inconnu: {}", type);
+                return;
+            }
+        }
+
+        req.ensureVariables();
+        req.getVariables().put("soutenanceId", data.get("soutenanceId"));
+        req.getVariables().put("statut", data.get("statut"));
+        req.getVariables().put("lieu", data.get("lieu"));
+
+        // Si pas d'email, on ne persiste pas pour éviter une erreur
+        if (req.resolveRecipientEmail() == null || req.resolveRecipientEmail().isBlank()) {
+            log.warn("Aucun email destinataire dans le message Soutenance, notification ignorée");
+            return;
+        }
+
+        queueNotification(req);
+    }
+
     // Classe interne pour mapper les données PDF
     private static final class PdfMapper {
         private PdfMapper() {}

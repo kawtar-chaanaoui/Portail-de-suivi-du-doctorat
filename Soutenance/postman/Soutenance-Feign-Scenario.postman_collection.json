@@ -1,0 +1,106 @@
+{
+  "info": {
+    "name": "Soutenance - Parcours Feign",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Scénario Postman couvrant la demande de soutenance, la vérification des prérequis via Feign et la vérification documentaire."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8084"
+    },
+    {
+      "key": "soutenanceId",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "Créer une demande de soutenance",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/demande",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "soutenances",
+            "demande"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorantId\": 99,\n  \"doctorantNom\": \"Test Doctorant\",\n  \"doctorantEmail\": \"doctorant@test.com\",\n  \"directeurId\": 12,\n  \"directeurNom\": \"Prof Directeur\"\n}"
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const json = pm.response.json();",
+              "pm.test('Réponse contient un ID de soutenance', function () {",
+              "    pm.expect(json.id).to.be.a('number');",
+              "});",
+              "pm.collectionVariables.set('soutenanceId', json.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Vérifier les prérequis (Feign)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/soutenances/{{soutenanceId}}/verifier-prerequis",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "soutenances",
+            "{{soutenanceId}}",
+            "verifier-prerequis"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Contrôler les documents requis",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/documents/soutenance/{{soutenanceId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            "soutenance",
+            "{{soutenanceId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

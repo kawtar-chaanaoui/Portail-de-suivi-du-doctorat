@@ -86,4 +86,27 @@ public class KafkaConfig {
         ));
         return factory;
     }
+
+    @Bean
+    public ConsumerFactory<String, String> stringConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "soutenance-bridge-group");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        return new DefaultKafkaConsumerFactory<>(props);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> stringKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory =
+            new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(stringConsumerFactory());
+        factory.setCommonErrorHandler(new DefaultErrorHandler(
+            (record, ex) -> log.error("Erreur Kafka (bridge soutenance): {}", ex.getMessage()),
+            new FixedBackOff(1000L, 3)
+        ));
+        return factory;
+    }
 }
